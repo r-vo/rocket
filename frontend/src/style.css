@@ -1,0 +1,19 @@
+:root {
+  --bg: #f7f8fb;
+  --card: #ffffff;
+  --ink: #14224a;
+  --muted: #6b7694;
+  --line: #e3e6ef;
+  --primary: #2f6fed;
+  --primary-dark: #1f4fb0;
+  --danger: #d6456f;
+  --success: #2e9e6b;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+#app { min-height: 100vh; }
+
+button { font: inherit; cursor: pointer; }
+input, select { font: inherit; }

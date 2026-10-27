@@ -1,0 +1,27 @@
+# Umgebungsvariablen & Secrets
+backend/.env
+
+# Abhängigkeiten
+node_modules/
+
+# SQLite-Datenbank (Hauptdatei + WAL/SHM/Journal-Begleitdateien)
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/prisma/dev.db-wal
+backend/prisma/dev.db-shm
+backend/prisma/prisma/
+
+# Hochgeladene Fotos & Logs (Nutzerdaten, nicht Code)
+backend/uploads/fotos/*
+!backend/uploads/fotos/.gitkeep
+backend/logs/
+*.log
+
+# Frontend Build-Output
+frontend/dist/
+
+# Lokale Backup-Kopien vom Server
+backups/
+
+# OS
+.DS_Store

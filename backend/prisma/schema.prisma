@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Nutzer {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwortHash String
+  istAdmin     Boolean  @default(false)
+  aktiv        Boolean  @default(true)
+  erstelltAm   DateTime @default(now())
+
+  sitzungen            Sitzung[]
+  profil               NutzerProfil?
+  ernaehrungseintraege Ernaehrungseintrag[]
+  gewichtseintraege    Gewichtseintrag[]
+  fortschrittsfotos    Fortschrittsfoto[]
+  aufgaben             Aufgabe[]
+  habits               Habit[]
+}
+
+// DB-gestützte Sitzung statt JWT: ermöglicht sofortiges serverseitiges Invalidieren bei
+// "Abmelden" (die im ersten Entwurf gefundene Lücke, siehe Konzept-Dokument vom 2026-10-27).
+// Gespeichert wird nur der Hash des Tokens, nicht das Token selbst.
+model Sitzung {
+  id         Int      @id @default(autoincrement())
+  nutzerId   Int
+  tokenHash  String   @unique
+  erstelltAm DateTime @default(now())
+  gueltigBis DateTime
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+}
+
+// Profil-/Zieldaten für die Ernährungsplanung (entspricht S.p aus dem ersten Entwurf,
+// ohne name/kg — Name kommt vom Nutzer, aktuelles Gewicht aus Gewichtseintrag).
+model NutzerProfil {
+  id              Int     @id @default(autoincrement())
+  nutzerId        Int     @unique
+  alter           Int?
+  geschlecht      String?
+  groesseCm       Float?
+  gewichtZielKg   Float?
+  nettoCarbsZielG Int?
+  alltagFaktor    Float?
+  trainingstage   Int?
+  equipment       String?
+  tempo           String?
+  zieldatum       String?
+  extraDefizit    Int?
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+}
+
+model Ernaehrungseintrag {
+  id          Int      @id @default(autoincrement())
+  nutzerId    Int
+  datum       String // yyyy-mm-dd
+  mahlzeit    String
+  bezeichnung String
+  menge       Float?
+  einheit     String?
+  kcal        Int
+  nettoCarbs  Float
+  fett        Float
+  eiweiss     Float
+  erstelltAm  DateTime @default(now())
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+}
+
+model Gewichtseintrag {
+  id       Int    @id @default(autoincrement())
+  nutzerId Int
+  datum    String // yyyy-mm-dd
+  kg       Float
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+
+  @@unique([nutzerId, datum])
+}
+
+// Fotos liegen als Datei unter backend/uploads/fotos/<nutzerId>/<dateiname> — nicht als
+// Base64 im Datensatz (Punkt 3 aus der Review vom ersten Entwurf).
+model Fortschrittsfoto {
+  id         Int      @id @default(autoincrement())
+  nutzerId   Int
+  datum      String // yyyy-mm-dd
+  dateiname  String
+  erstelltAm DateTime @default(now())
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+}
+
+model Aufgabe {
+  id          Int       @id @default(autoincrement())
+  nutzerId    Int
+  bezeichnung String
+  faelligAm   String? // yyyy-mm-dd
+  erledigt    Boolean   @default(false)
+  erledigtAm  DateTime?
+  erstelltAm  DateTime  @default(now())
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+}
+
+model Habit {
+  id          Int      @id @default(autoincrement())
+  nutzerId    Int
+  bezeichnung String
+  aktiv       Boolean  @default(true)
+  erstelltAm  DateTime @default(now())
+
+  nutzer    Nutzer         @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  eintraege HabitEintrag[]
+}
+
+model HabitEintrag {
+  id       Int    @id @default(autoincrement())
+  habitId  Int
+  datum    String // yyyy-mm-dd
+  erledigt Boolean @default(true)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, datum])
+}
