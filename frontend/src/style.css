@@ -32,7 +32,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); }
+/* Sicherung gegen versehentliches horizontales Verschieben der ganzen Seite auf schmalen
+   Bildschirmen — einzelne Elemente, die zu breit werden, sollen selbst scrollen (z. B. die
+   Navigation oder Tabellen), statt die komplette Seite seitlich aufzuziehen. */
+html, body { margin: 0; background: var(--bg); color: var(--ink); overflow-x: hidden; }
 #app { min-height: 100vh; }
 
 button { font: inherit; cursor: pointer; }

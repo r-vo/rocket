@@ -3,27 +3,29 @@
 
   <div v-if="fehler" class="fehler">{{ fehler }}</div>
 
-  <table class="tabelle">
-    <thead>
-      <tr><th>Name</th><th>E-Mail</th><th>Admin</th><th>Status</th><th></th></tr>
-    </thead>
-    <tbody>
-      <tr v-for="n in nutzer" :key="n.id">
-        <td>{{ n.name }}</td>
-        <td>{{ n.email }}</td>
-        <td>
-          <input type="checkbox" :checked="n.istAdmin" @change="aktualisieren(n, { istAdmin: $event.target.checked })" />
-        </td>
-        <td>
-          <span :class="['badge', n.aktiv ? 'aktiv' : 'gesperrt']">{{ n.aktiv ? 'Aktiv' : 'Gesperrt' }}</span>
-        </td>
-        <td class="aktionen">
-          <button class="klein" @click="aktualisieren(n, { aktiv: !n.aktiv })">{{ n.aktiv ? 'Sperren' : 'Entsperren' }}</button>
-          <button class="klein" @click="passwortSetzen(n)">Passwort setzen</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="tabelle-scroll">
+    <table class="tabelle">
+      <thead>
+        <tr><th>Name</th><th>E-Mail</th><th>Admin</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr v-for="n in nutzer" :key="n.id">
+          <td>{{ n.name }}</td>
+          <td>{{ n.email }}</td>
+          <td>
+            <input type="checkbox" :checked="n.istAdmin" @change="aktualisieren(n, { istAdmin: $event.target.checked })" />
+          </td>
+          <td>
+            <span :class="['badge', n.aktiv ? 'aktiv' : 'gesperrt']">{{ n.aktiv ? 'Aktiv' : 'Gesperrt' }}</span>
+          </td>
+          <td class="aktionen">
+            <button class="klein" @click="aktualisieren(n, { aktiv: !n.aktiv })">{{ n.aktiv ? 'Sperren' : 'Entsperren' }}</button>
+            <button class="klein" @click="passwortSetzen(n)">Passwort setzen</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <h2>Neuen Nutzer anlegen</h2>
   <div class="formular">
@@ -92,8 +94,10 @@ onMounted(laden)
 </script>
 
 <style scoped>
-.tabelle { width: 100%; border-collapse: collapse; margin: 16px 0 28px; }
-.tabelle th, .tabelle td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.tabelle-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 16px 0 28px; }
+.tabelle { width: 100%; min-width: 580px; border-collapse: collapse; margin: 0; }
+.tabelle th, .tabelle td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 14px; white-space: nowrap; }
+.tabelle .aktionen { white-space: nowrap; }
 .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
 .badge.aktiv { background: #e3f6ec; color: var(--success); }
 .badge.gesperrt { background: #fde8ee; color: var(--danger); }
