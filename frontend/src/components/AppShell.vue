@@ -5,8 +5,7 @@
       <nav>
         <RouterLink to="/">Heute</RouterLink>
         <RouterLink to="/ernaehrung">Ernährung</RouterLink>
-        <RouterLink to="/aufgaben">Aufgaben</RouterLink>
-        <RouterLink to="/habits">Habits</RouterLink>
+        <!-- Aufgaben/Habits noch ausgeblendet, bis die Module Inhalt haben -->
         <RouterLink v-if="authStore.istAdmin" to="/admin/nutzer">Nutzerverwaltung</RouterLink>
       </nav>
       <div class="rechts">
