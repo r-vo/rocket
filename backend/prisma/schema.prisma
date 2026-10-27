@@ -11,17 +11,17 @@ datasource db {
 }
 
 model Nutzer {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  passwortHash String
-  istAdmin     Boolean  @default(false)
-  aktiv        Boolean  @default(true)
-  erstelltAm   DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  name               String
+  email              String   @unique
+  passwortHash       String
+  istAdmin           Boolean  @default(false)
+  aktiv              Boolean  @default(true)
+  erstelltAm         DateTime @default(now())
   // JSON-Array der Modul-Schlüssel, die der Nutzer für sich deaktiviert hat (siehe
   // src/utils/module.js). Fehlt ein Schlüssel hier, ist das Modul aktiv — so sind neue,
   // künftige Module automatisch für alle Nutzer aktiv, ohne dass ein Backfill nötig ist.
-  deaktivierteModule String @default("[]")
+  deaktivierteModule String   @default("[]")
 
   sitzungen            Sitzung[]
   profil               NutzerProfil?
@@ -31,6 +31,8 @@ model Nutzer {
   fortschrittsfotos    Fortschrittsfoto[]
   aufgaben             Aufgabe[]
   habits               Habit[]
+  buecher              Buch[]
+  buchNotizen          BuchNotiz[]
 }
 
 // DB-gestützte Sitzung statt JWT: ermöglicht sofortiges serverseitiges Invalidieren bei
@@ -130,7 +132,7 @@ model Habit {
 }
 
 model HabitEintrag {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   habitId  Int
   datum    String // yyyy-mm-dd
   erledigt Boolean @default(true)
@@ -153,4 +155,38 @@ model Planpunkt {
   nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
 
   @@unique([nutzerId, wochentag, mahlzeit])
+}
+
+// Cover kommt entweder von der Online-Buchsuche (coverUrl, öffentliche Open-Library-Bild-URL)
+// oder ist ein eigenes Foto bei manueller Eingabe (coverDateiname) — analog zu Fortschrittsfoto
+// unter backend/uploads/buchcover/<nutzerId>/, nur über authentifizierte Route abrufbar.
+model Buch {
+  id             Int      @id @default(autoincrement())
+  nutzerId       Int
+  titel          String
+  autor          String?
+  coverUrl       String?
+  coverDateiname String?
+  seitenzahl     Int?
+  status         String   @default("wunschliste") // 'wunschliste' | 'am_lesen' | 'gelesen'
+  aktuelleSeite  Int?
+  begonnenAm     String? // yyyy-mm-dd
+  beendetAm      String? // yyyy-mm-dd
+  bewertung      Int? // 1–5 Sterne
+  erstelltAm     DateTime @default(now())
+
+  nutzer  Nutzer      @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  notizen BuchNotiz[]
+}
+
+model BuchNotiz {
+  id         Int      @id @default(autoincrement())
+  buchId     Int
+  nutzerId   Int
+  text       String
+  seite      Int?
+  erstelltAm DateTime @default(now())
+
+  buch   Buch   @relation(fields: [buchId], references: [id], onDelete: Cascade)
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
 }

@@ -7,6 +7,7 @@
         <RouterLink v-if="modulStore.istAktiv('ernaehrung')" to="/ernaehrung">Ernährung</RouterLink>
         <RouterLink v-if="modulStore.istAktiv('aufgaben')" to="/aufgaben">Aufgaben</RouterLink>
         <RouterLink v-if="modulStore.istAktiv('habits')" to="/habits">Habits</RouterLink>
+        <RouterLink v-if="modulStore.istAktiv('buecher')" to="/buecher">Bücher</RouterLink>
         <RouterLink v-if="authStore.istAdmin" to="/admin/nutzer">Nutzerverwaltung</RouterLink>
         <RouterLink to="/einstellungen">Einstellungen</RouterLink>
       </nav>

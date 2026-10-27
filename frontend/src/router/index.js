@@ -16,6 +16,7 @@ const routes = [
       { path: 'ernaehrung', name: 'Ernaehrung', component: () => import('@/views/Ernaehrung.vue') },
       { path: 'aufgaben', name: 'Aufgaben', component: () => import('@/views/Aufgaben.vue') },
       { path: 'habits', name: 'Habits', component: () => import('@/views/Habits.vue') },
+      { path: 'buecher', name: 'Buecher', component: () => import('@/views/Buecher.vue') },
       { path: 'einstellungen', name: 'Einstellungen', component: () => import('@/views/Einstellungen.vue') },
       { path: 'admin/nutzer', name: 'NutzerVerwaltung', component: () => import('@/views/admin/NutzerVerwaltung.vue'), meta: { admin: true } },
     ],

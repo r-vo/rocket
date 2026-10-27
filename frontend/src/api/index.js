@@ -62,6 +62,19 @@ export const einstellungen = {
   modulSetzen: (schluessel, aktiv) => client.put(`/einstellungen/module/${schluessel}`, { aktiv }),
 }
 
+export const buecher = {
+  liste: (status) => client.get('/buecher', { params: status ? { status } : {} }),
+  erstellen: (daten) => client.post('/buecher', daten),
+  aktualisieren: (id, daten) => client.patch(`/buecher/${id}`, daten),
+  loeschen: (id) => client.delete(`/buecher/${id}`),
+  notizen: (buchId) => client.get(`/buecher/${buchId}/notizen`),
+  notizErstellen: (buchId, daten) => client.post(`/buecher/${buchId}/notizen`, daten),
+  notizAktualisieren: (id, daten) => client.put(`/buecher/notizen/${id}`, daten),
+  notizLoeschen: (id) => client.delete(`/buecher/notizen/${id}`),
+  coverDatei: (id) => client.get(`/buecher/${id}/cover`, { responseType: 'blob' }),
+  coverHochladen: (id, formData) => client.post(`/buecher/${id}/cover`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+}
+
 export const nutzerAdmin = {
   liste: () => client.get('/admin/nutzer'),
   erstellen: (daten) => client.post('/admin/nutzer', daten),
