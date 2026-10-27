@@ -23,6 +23,7 @@ model Nutzer {
   profil               NutzerProfil?
   ernaehrungseintraege Ernaehrungseintrag[]
   gewichtseintraege    Gewichtseintrag[]
+  planpunkte           Planpunkt[]
   fortschrittsfotos    Fortschrittsfoto[]
   aufgaben             Aufgabe[]
   habits               Habit[]
@@ -133,4 +134,19 @@ model HabitEintrag {
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, datum])
+}
+
+// Persistierte, selbst eingetragene Überschreibung eines Essensplan-Slots — fehlt ein Eintrag,
+// zeigt das Frontend stattdessen einen generierten Vorschlag (kein eigenes Modell nötig, da
+// rein clientseitig berechnet).
+model Planpunkt {
+  id        Int    @id @default(autoincrement())
+  nutzerId  Int
+  wochentag Int // 0=Montag … 6=Sonntag
+  mahlzeit  String // 'B' | 'L' | 'D'
+  text      String
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+
+  @@unique([nutzerId, wochentag, mahlzeit])
 }

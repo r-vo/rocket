@@ -11,6 +11,26 @@
   font-family: -apple-system, system-ui, sans-serif;
 }
 
+/* Farb-Schemata aus dem ersten Entwurf ("Keto Kompass") übernommen — gleiche Namen/Hex-Werte,
+   nur auf die hier app-weit genutzten CSS-Variablen gemappt (--acc→--primary, --mut→--muted,
+   --warn→--danger). Werden per data-theme-Attribut auf <html> aktiviert, siehe utils/theme.js. */
+[data-theme="nacht"] {
+  --bg: #0b1530; --card: #14224a; --ink: #eaf0ff; --muted: #8fa0cc; --line: #223569;
+  --primary: #6aa8ff; --primary-dark: #a78bfa; --danger: #ff7aa8; --success: #4ade80;
+}
+[data-theme="himmel"] {
+  --bg: #eef6ff; --card: #ffffff; --ink: #10263f; --muted: #5d7590; --line: #d7e8fb;
+  --primary: #2f8fe8; --primary-dark: #7cc4ff; --danger: #e8507f; --success: #2e9e6b;
+}
+[data-theme="flieder"] {
+  --bg: #1b1033; --card: #2a1a4d; --ink: #f3ecff; --muted: #b7a5dc; --line: #3a2660;
+  --primary: #b48cff; --primary-dark: #ff9bd6; --danger: #ff7aa8; --success: #4ade80;
+}
+[data-theme="rose"] {
+  --bg: #fff1f6; --card: #ffffff; --ink: #3a1226; --muted: #94607a; --line: #ffe1ec;
+  --primary: #ec5b97; --primary-dark: #ffa3c4; --danger: #c2185b; --success: #2e9e6b;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
 #app { min-height: 100vh; }

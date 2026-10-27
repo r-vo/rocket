@@ -25,6 +25,38 @@ export const auth = {
   me: () => client.get('/auth/me'),
 }
 
+export const profil = {
+  abrufen: () => client.get('/profil'),
+  speichern: (daten) => client.put('/profil', daten),
+}
+
+export const ernaehrung = {
+  tag: (datum) => client.get('/ernaehrung', { params: { datum } }),
+  bereich: (von, bis) => client.get('/ernaehrung', { params: { von, bis } }),
+  erstellen: (daten) => client.post('/ernaehrung', daten),
+  loeschen: (id) => client.delete(`/ernaehrung/${id}`),
+  favoriten: (mahlzeit) => client.get('/ernaehrung/favoriten', { params: mahlzeit ? { mahlzeit } : {} }),
+}
+
+export const gewicht = {
+  liste: () => client.get('/gewicht'),
+  eintragen: (datum, kg) => client.put('/gewicht', { datum, kg }),
+}
+
+export const fotos = {
+  liste: () => client.get('/fotos'),
+  datei: (id) => client.get(`/fotos/${id}/datei`, { responseType: 'blob' }),
+  hochladen: (formData) => client.post('/fotos', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  loeschen: (id) => client.delete(`/fotos/${id}`),
+}
+
+export const plan = {
+  liste: () => client.get('/plan'),
+  setzen: (wochentag, mahlzeit, text) => client.put(`/plan/${wochentag}/${mahlzeit}`, { text }),
+  entfernen: (wochentag, mahlzeit) => client.delete(`/plan/${wochentag}/${mahlzeit}`),
+  alleEntfernen: () => client.delete('/plan'),
+}
+
 export const nutzerAdmin = {
   liste: () => client.get('/admin/nutzer'),
   erstellen: (daten) => client.post('/admin/nutzer', daten),

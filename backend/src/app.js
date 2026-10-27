@@ -5,6 +5,11 @@ const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth');
 const nutzerAdminRoutes = require('./routes/nutzerAdmin');
+const profilRoutes = require('./routes/profil');
+const ernaehrungRoutes = require('./routes/ernaehrung');
+const gewichtRoutes = require('./routes/gewicht');
+const fotoRoutes = require('./routes/fotos');
+const planRoutes = require('./routes/plan');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -26,12 +31,21 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/nutzer', nutzerAdminRoutes);
+app.use('/api/profil', profilRoutes);
+app.use('/api/ernaehrung', ernaehrungRoutes);
+app.use('/api/gewicht', gewichtRoutes);
+app.use('/api/fotos', fotoRoutes);
+app.use('/api/plan', planRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `Route nicht gefunden: ${req.method} ${req.path}` });
 });
 
 app.use((err, req, res, next) => {
+  if (err.name === 'MulterError') {
+    const nachricht = err.code === 'LIMIT_FILE_SIZE' ? 'Datei zu groß (max. 8 MB).' : 'Datei-Upload fehlgeschlagen.';
+    return res.status(400).json({ error: nachricht });
+  }
   const statusCode = err.statusCode || 500;
   if (process.env.NODE_ENV === 'development') {
     console.error(err);
