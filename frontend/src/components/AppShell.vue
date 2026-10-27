@@ -4,9 +4,11 @@
       <strong>🚀 Rocket</strong>
       <nav>
         <RouterLink to="/">Heute</RouterLink>
-        <RouterLink to="/ernaehrung">Ernährung</RouterLink>
-        <!-- Aufgaben/Habits noch ausgeblendet, bis die Module Inhalt haben -->
+        <RouterLink v-if="modulStore.istAktiv('ernaehrung')" to="/ernaehrung">Ernährung</RouterLink>
+        <RouterLink v-if="modulStore.istAktiv('aufgaben')" to="/aufgaben">Aufgaben</RouterLink>
+        <RouterLink v-if="modulStore.istAktiv('habits')" to="/habits">Habits</RouterLink>
         <RouterLink v-if="authStore.istAdmin" to="/admin/nutzer">Nutzerverwaltung</RouterLink>
+        <RouterLink to="/einstellungen">Einstellungen</RouterLink>
       </nav>
       <div class="rechts">
         <span class="name">{{ authStore.user?.name }}</span>
@@ -20,16 +22,24 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
+import { useModulStore } from '@/stores/module.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const modulStore = useModulStore()
 
 async function abmelden() {
   await authStore.abmelden()
+  modulStore.zuruecksetzen()
   router.push('/login')
 }
+
+onMounted(() => {
+  if (!modulStore.geladen) modulStore.laden()
+})
 </script>
 
 <style scoped>

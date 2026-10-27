@@ -57,6 +57,11 @@ export const plan = {
   alleEntfernen: () => client.delete('/plan'),
 }
 
+export const einstellungen = {
+  module: () => client.get('/einstellungen/module'),
+  modulSetzen: (schluessel, aktiv) => client.put(`/einstellungen/module/${schluessel}`, { aktiv }),
+}
+
 export const nutzerAdmin = {
   liste: () => client.get('/admin/nutzer'),
   erstellen: (daten) => client.post('/admin/nutzer', daten),

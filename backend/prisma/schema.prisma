@@ -18,6 +18,10 @@ model Nutzer {
   istAdmin     Boolean  @default(false)
   aktiv        Boolean  @default(true)
   erstelltAm   DateTime @default(now())
+  // JSON-Array der Modul-Schlüssel, die der Nutzer für sich deaktiviert hat (siehe
+  // src/utils/module.js). Fehlt ein Schlüssel hier, ist das Modul aktiv — so sind neue,
+  // künftige Module automatisch für alle Nutzer aktiv, ohne dass ein Backfill nötig ist.
+  deaktivierteModule String @default("[]")
 
   sitzungen            Sitzung[]
   profil               NutzerProfil?
