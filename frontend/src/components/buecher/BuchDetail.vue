@@ -18,6 +18,17 @@
         <button v-for="(name, s) in STATUS_NAME" :key="s" :class="{ on: buch.status === s }" @click="statusSetzen(s)">{{ name }}</button>
       </div>
 
+      <div class="feld">
+        <label>Tags</label>
+        <div class="tags" v-if="buch.tags?.length">
+          <span class="tag" v-for="t in buch.tags" :key="t">{{ t }} <span class="tag-x" @click="tagEntfernen(t)">×</span></span>
+        </div>
+        <div class="g2">
+          <input v-model="neuerTag" placeholder="z. B. Krimi, Hörbuch" @keyup.enter="tagHinzufuegen" />
+          <button @click="tagHinzufuegen" :disabled="!neuerTag.trim()">Hinzufügen</button>
+        </div>
+      </div>
+
       <div v-if="buch.status === 'am_lesen'" class="feld">
         <label>Aktuelle Seite{{ buch.seitenzahl ? ` von ${buch.seitenzahl}` : '' }}</label>
         <input v-model.number="aktuelleSeite" type="number" @change="fortschrittSpeichern" />
@@ -29,6 +40,29 @@
           <span v-for="n in 5" :key="n" @click="bewertungSetzen(n)" :class="{ an: buch.bewertung >= n }">★</span>
         </div>
         <p v-if="buch.beendetAm" class="mut">Beendet am {{ formatDatum(buch.beendetAm) }}</p>
+      </div>
+
+      <div class="feld">
+        <label>Details</label>
+        <div class="details-form">
+          <div>
+            <label class="klein">Seitenzahl</label>
+            <input v-model.number="details.seitenzahl" type="number" />
+          </div>
+          <div>
+            <label class="klein">ISBN</label>
+            <input v-model="details.isbn" />
+          </div>
+          <div>
+            <label class="klein">Verlag</label>
+            <input v-model="details.verlag" />
+          </div>
+          <div>
+            <label class="klein">Ausgabe</label>
+            <input v-model="details.ausgabe" placeholder="z. B. Taschenbuch" />
+          </div>
+        </div>
+        <button @click="detailsSpeichern">Details speichern</button>
       </div>
 
       <h3>Notizen</h3>
@@ -119,6 +153,34 @@ async function bewertungSetzen(n) {
   emit('aktualisiert', res.data)
 }
 
+const details = reactive({
+  seitenzahl: props.buch.seitenzahl,
+  isbn: props.buch.isbn,
+  verlag: props.buch.verlag,
+  ausgabe: props.buch.ausgabe,
+})
+
+async function detailsSpeichern() {
+  const res = await buecherApi.aktualisieren(props.buch.id, { ...details })
+  emit('aktualisiert', res.data)
+}
+
+const neuerTag = ref('')
+
+async function tagHinzufuegen() {
+  const tag = neuerTag.value.trim()
+  if (!tag) return
+  if ((props.buch.tags || []).includes(tag)) { neuerTag.value = ''; return }
+  const res = await buecherApi.aktualisieren(props.buch.id, { tags: [...(props.buch.tags || []), tag] })
+  neuerTag.value = ''
+  emit('aktualisiert', res.data)
+}
+
+async function tagEntfernen(tag) {
+  const res = await buecherApi.aktualisieren(props.buch.id, { tags: (props.buch.tags || []).filter((t) => t !== tag) })
+  emit('aktualisiert', res.data)
+}
+
 async function notizHinzufuegen() {
   if (!neueNotiz.text.trim()) return
   await buecherApi.notizErstellen(props.buch.id, { text: neueNotiz.text.trim(), seite: neueNotiz.seite })
@@ -169,6 +231,13 @@ input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
 .neue-notiz { margin-top: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
 .g2 button { padding: 9px 14px; border: 0; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 600; }
+.g2 button:disabled { opacity: .5; }
+.details-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.details-form label.klein { margin: 0 0 2px; font-size: 12px; }
+.feld > button { padding: 9px 14px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; margin-top: 10px; width: 100%; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+.tag-x { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; }
 button.ghost { padding: 9px 14px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; margin-top: 16px; width: 100%; }
 button.ghost.gefahr { border-color: var(--danger); color: var(--danger); margin-bottom: 8px; }
 </style>

@@ -11,6 +11,24 @@ function heuteDatum() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Tags liegen in der DB als JSON-String (siehe schema.prisma), die API gibt sie als Array aus —
+// so muss das Frontend nirgends selbst parsen.
+function tagsAusgeben(buch) {
+  let tags = [];
+  try {
+    const geparst = JSON.parse(buch.tags || '[]');
+    if (Array.isArray(geparst)) tags = geparst;
+  } catch {
+    tags = [];
+  }
+  return { ...buch, tags };
+}
+
+function tagsBereinigen(tags) {
+  if (!Array.isArray(tags)) return [];
+  return [...new Set(tags.map((t) => String(t).trim()).filter(Boolean))];
+}
+
 async function liste(req, res) {
   const { status } = req.query;
   const where = { nutzerId: req.user.id };
@@ -19,11 +37,11 @@ async function liste(req, res) {
     where.status = status;
   }
   const buecher = await prisma.buch.findMany({ where, orderBy: { erstelltAm: 'desc' } });
-  res.json(buecher);
+  res.json(buecher.map(tagsAusgeben));
 }
 
 async function erstellen(req, res) {
-  const { titel, autor, coverUrl, seitenzahl, status } = req.body;
+  const { titel, autor, verlag, ausgabe, isbn, coverUrl, seitenzahl, status, tags } = req.body;
   if (!titel?.trim()) {
     return res.status(400).json({ error: 'Titel ist erforderlich' });
   }
@@ -33,14 +51,18 @@ async function erstellen(req, res) {
       nutzerId: req.user.id,
       titel: titel.trim(),
       autor: autor?.trim() || null,
+      verlag: verlag?.trim() || null,
+      ausgabe: ausgabe?.trim() || null,
+      isbn: isbn?.trim() || null,
       coverUrl: coverUrl || null,
       seitenzahl: seitenzahl != null ? +seitenzahl : null,
       status: gewaehlterStatus,
       begonnenAm: gewaehlterStatus === 'am_lesen' ? heuteDatum() : null,
       beendetAm: gewaehlterStatus === 'gelesen' ? heuteDatum() : null,
+      tags: JSON.stringify(tagsBereinigen(tags)),
     },
   });
-  res.status(201).json(buch);
+  res.status(201).json(tagsAusgeben(buch));
 }
 
 async function aktualisieren(req, res) {
@@ -50,19 +72,23 @@ async function aktualisieren(req, res) {
     return res.status(404).json({ error: 'Buch nicht gefunden' });
   }
 
-  const { titel, autor, coverUrl, seitenzahl, status, aktuelleSeite, begonnenAm, beendetAm, bewertung } = req.body;
+  const { titel, autor, verlag, ausgabe, isbn, coverUrl, seitenzahl, status, aktuelleSeite, begonnenAm, beendetAm, bewertung, tags } = req.body;
   const data = {};
   if (titel !== undefined) {
     if (!titel.trim()) return res.status(400).json({ error: 'Titel darf nicht leer sein' });
     data.titel = titel.trim();
   }
   if (autor !== undefined) data.autor = autor?.trim() || null;
+  if (verlag !== undefined) data.verlag = verlag?.trim() || null;
+  if (ausgabe !== undefined) data.ausgabe = ausgabe?.trim() || null;
+  if (isbn !== undefined) data.isbn = isbn?.trim() || null;
   if (coverUrl !== undefined) data.coverUrl = coverUrl || null;
   if (seitenzahl !== undefined) data.seitenzahl = seitenzahl != null ? +seitenzahl : null;
   if (aktuelleSeite !== undefined) data.aktuelleSeite = aktuelleSeite != null ? +aktuelleSeite : null;
   if (bewertung !== undefined) data.bewertung = bewertung != null ? Math.min(5, Math.max(1, +bewertung)) : null;
   if (begonnenAm !== undefined) data.begonnenAm = begonnenAm || null;
   if (beendetAm !== undefined) data.beendetAm = beendetAm || null;
+  if (tags !== undefined) data.tags = JSON.stringify(tagsBereinigen(tags));
 
   if (status !== undefined) {
     if (!STATUS_WERTE.includes(status)) return res.status(400).json({ error: 'Ungültiger Status' });
@@ -73,7 +99,7 @@ async function aktualisieren(req, res) {
   }
 
   const aktualisiert = await prisma.buch.update({ where: { id }, data });
-  res.json(aktualisiert);
+  res.json(tagsAusgeben(aktualisiert));
 }
 
 async function loeschen(req, res) {
@@ -117,7 +143,7 @@ async function coverHochladen(req, res) {
     where: { id },
     data: { coverDateiname: req.file.filename, coverUrl: null },
   });
-  res.status(201).json(aktualisiert);
+  res.status(201).json(tagsAusgeben(aktualisiert));
 }
 
 module.exports = { liste, erstellen, aktualisieren, loeschen, coverDatei, coverHochladen, UPLOAD_DIR };

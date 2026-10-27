@@ -165,6 +165,9 @@ model Buch {
   nutzerId       Int
   titel          String
   autor          String?
+  verlag         String?
+  ausgabe        String?
+  isbn           String?
   coverUrl       String?
   coverDateiname String?
   seitenzahl     Int?
@@ -173,6 +176,9 @@ model Buch {
   begonnenAm     String? // yyyy-mm-dd
   beendetAm      String? // yyyy-mm-dd
   bewertung      Int? // 1–5 Sterne
+  // JSON-Array frei vergebener Tags (z. B. "Krimi", "Hörbuch") — analog zum Muster bei
+  // Nutzer.deaktivierteModule, kein eigenes Tag-Modell nötig für eine persönliche Bibliothek.
+  tags           String   @default("[]")
   erstelltAm     DateTime @default(now())
 
   nutzer  Nutzer      @relation(fields: [nutzerId], references: [id], onDelete: Cascade)

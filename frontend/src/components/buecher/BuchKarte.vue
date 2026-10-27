@@ -12,6 +12,9 @@
       <div v-else-if="buch.status === 'gelesen' && buch.bewertung" class="sterne">
         {{ '★'.repeat(buch.bewertung) }}{{ '☆'.repeat(5 - buch.bewertung) }}
       </div>
+      <div v-if="buch.tags?.length" class="tags">
+        <span class="tag" v-for="t in buch.tags" :key="t">{{ t }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -62,4 +65,6 @@ onUnmounted(() => { if (objectUrl) URL.revokeObjectURL(objectUrl) })
 .balken { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .fuellung { height: 100%; background: var(--primary); }
 .sterne { color: var(--primary); font-size: 14px; margin-top: 4px; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tag { background: var(--bg); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 2px 8px; font-size: 11px; }
 </style>
