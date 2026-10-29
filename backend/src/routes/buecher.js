@@ -31,6 +31,9 @@ router.delete('/:id', buecherController.loeschen);
 router.get('/:id/cover', buecherController.coverDatei);
 router.post('/:id/cover', coverUpload.single('foto'), buecherController.coverHochladen);
 
+router.patch('/leserunden/:id', buecherController.leserundeAktualisieren);
+router.delete('/leserunden/:id', buecherController.leserundeLoeschen);
+
 router.get('/:buchId/notizen', notizenController.liste);
 router.post('/:buchId/notizen', notizenController.erstellen);
 router.put('/notizen/:id', notizenController.aktualisieren);

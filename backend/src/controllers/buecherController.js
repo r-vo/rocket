@@ -29,6 +29,8 @@ function tagsBereinigen(tags) {
   return [...new Set(tags.map((t) => String(t).trim()).filter(Boolean))];
 }
 
+const MIT_LESERUNDEN = { leserunden: { orderBy: { id: 'asc' } } };
+
 async function liste(req, res) {
   const { status } = req.query;
   const where = { nutzerId: req.user.id };
@@ -36,7 +38,7 @@ async function liste(req, res) {
     if (!STATUS_WERTE.includes(status)) return res.status(400).json({ error: 'Ungültiger Status' });
     where.status = status;
   }
-  const buecher = await prisma.buch.findMany({ where, orderBy: { erstelltAm: 'desc' } });
+  const buecher = await prisma.buch.findMany({ where, orderBy: { erstelltAm: 'desc' }, include: MIT_LESERUNDEN });
   res.json(buecher.map(tagsAusgeben));
 }
 
@@ -57,22 +59,26 @@ async function erstellen(req, res) {
       coverUrl: coverUrl || null,
       seitenzahl: seitenzahl != null ? +seitenzahl : null,
       status: gewaehlterStatus,
-      begonnenAm: gewaehlterStatus === 'am_lesen' ? heuteDatum() : null,
-      beendetAm: gewaehlterStatus === 'gelesen' ? heuteDatum() : null,
       tags: JSON.stringify(tagsBereinigen(tags)),
+      leserunden: gewaehlterStatus === 'am_lesen'
+        ? { create: { begonnenAm: heuteDatum() } }
+        : gewaehlterStatus === 'gelesen'
+          ? { create: { beendetAm: heuteDatum() } }
+          : undefined,
     },
+    include: MIT_LESERUNDEN,
   });
   res.status(201).json(tagsAusgeben(buch));
 }
 
 async function aktualisieren(req, res) {
   const id = +req.params.id;
-  const buch = await prisma.buch.findUnique({ where: { id } });
+  const buch = await prisma.buch.findUnique({ where: { id }, include: MIT_LESERUNDEN });
   if (!buch || buch.nutzerId !== req.user.id) {
     return res.status(404).json({ error: 'Buch nicht gefunden' });
   }
 
-  const { titel, autor, verlag, ausgabe, isbn, coverUrl, seitenzahl, status, aktuelleSeite, begonnenAm, beendetAm, bewertung, tags } = req.body;
+  const { titel, autor, verlag, ausgabe, isbn, coverUrl, seitenzahl, status, aktuelleSeite, bewertung, tags } = req.body;
   const data = {};
   if (titel !== undefined) {
     if (!titel.trim()) return res.status(400).json({ error: 'Titel darf nicht leer sein' });
@@ -86,20 +92,57 @@ async function aktualisieren(req, res) {
   if (seitenzahl !== undefined) data.seitenzahl = seitenzahl != null ? +seitenzahl : null;
   if (aktuelleSeite !== undefined) data.aktuelleSeite = aktuelleSeite != null ? +aktuelleSeite : null;
   if (bewertung !== undefined) data.bewertung = bewertung != null ? Math.min(5, Math.max(1, +bewertung)) : null;
-  if (begonnenAm !== undefined) data.begonnenAm = begonnenAm || null;
-  if (beendetAm !== undefined) data.beendetAm = beendetAm || null;
   if (tags !== undefined) data.tags = JSON.stringify(tagsBereinigen(tags));
 
   if (status !== undefined) {
     if (!STATUS_WERTE.includes(status)) return res.status(400).json({ error: 'Ungültiger Status' });
     data.status = status;
-    // Datum automatisch setzen, wenn der Nutzer beim Statuswechsel keins mitschickt.
-    if (status === 'am_lesen' && !buch.begonnenAm && begonnenAm === undefined) data.begonnenAm = heuteDatum();
-    if (status === 'gelesen' && !buch.beendetAm && beendetAm === undefined) data.beendetAm = heuteDatum();
+    // Eine offene Leserunde ist eine ohne beendetAm. Beim Wechsel auf "am_lesen" wird — sofern
+    // keine offene Leserunde existiert — eine neue begonnen (deckt sowohl den Erststart als auch
+    // ein erneutes Lesen nach "gelesen" ab). Beim Wechsel auf "gelesen" wird die zuletzt offene
+    // Leserunde geschlossen; existiert keine (z. B. Direktwechsel von "wunschliste"), wird eine
+    // bereits abgeschlossene Leserunde ohne Startdatum angelegt.
+    const offeneLeserunde = buch.leserunden.slice().reverse().find((l) => !l.beendetAm);
+    if (status === 'am_lesen' && !offeneLeserunde) {
+      data.leserunden = { create: { begonnenAm: heuteDatum() } };
+    }
+    if (status === 'gelesen') {
+      if (offeneLeserunde) {
+        await prisma.leserunde.update({ where: { id: offeneLeserunde.id }, data: { beendetAm: heuteDatum() } });
+      } else {
+        data.leserunden = { create: { beendetAm: heuteDatum() } };
+      }
+    }
   }
 
-  const aktualisiert = await prisma.buch.update({ where: { id }, data });
+  const aktualisiert = await prisma.buch.update({ where: { id }, data, include: MIT_LESERUNDEN });
   res.json(tagsAusgeben(aktualisiert));
+}
+
+async function leserundeAktualisieren(req, res) {
+  const id = +req.params.id;
+  const leserunde = await prisma.leserunde.findUnique({ where: { id }, include: { buch: true } });
+  if (!leserunde || leserunde.buch.nutzerId !== req.user.id) {
+    return res.status(404).json({ error: 'Leserunde nicht gefunden' });
+  }
+  const { begonnenAm, beendetAm } = req.body;
+  const data = {};
+  if (begonnenAm !== undefined) data.begonnenAm = begonnenAm || null;
+  if (beendetAm !== undefined) data.beendetAm = beendetAm || null;
+  await prisma.leserunde.update({ where: { id }, data });
+  const buch = await prisma.buch.findUnique({ where: { id: leserunde.buchId }, include: MIT_LESERUNDEN });
+  res.json(tagsAusgeben(buch));
+}
+
+async function leserundeLoeschen(req, res) {
+  const id = +req.params.id;
+  const leserunde = await prisma.leserunde.findUnique({ where: { id }, include: { buch: true } });
+  if (!leserunde || leserunde.buch.nutzerId !== req.user.id) {
+    return res.status(404).json({ error: 'Leserunde nicht gefunden' });
+  }
+  await prisma.leserunde.delete({ where: { id } });
+  const buch = await prisma.buch.findUnique({ where: { id: leserunde.buchId }, include: MIT_LESERUNDEN });
+  res.json(tagsAusgeben(buch));
 }
 
 async function loeschen(req, res) {
@@ -146,4 +189,14 @@ async function coverHochladen(req, res) {
   res.status(201).json(tagsAusgeben(aktualisiert));
 }
 
-module.exports = { liste, erstellen, aktualisieren, loeschen, coverDatei, coverHochladen, UPLOAD_DIR };
+module.exports = {
+  liste,
+  erstellen,
+  aktualisieren,
+  loeschen,
+  coverDatei,
+  coverHochladen,
+  leserundeAktualisieren,
+  leserundeLoeschen,
+  UPLOAD_DIR,
+};

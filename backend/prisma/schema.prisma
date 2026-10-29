@@ -173,16 +173,28 @@ model Buch {
   seitenzahl     Int?
   status         String   @default("wunschliste") // 'wunschliste' | 'am_lesen' | 'gelesen'
   aktuelleSeite  Int?
-  begonnenAm     String? // yyyy-mm-dd
-  beendetAm      String? // yyyy-mm-dd
-  bewertung      Int? // 1–5 Sterne
+  bewertung      Int? // 1–5 Sterne, gilt für das Buch insgesamt (nicht pro Leserunde)
   // JSON-Array frei vergebener Tags (z. B. "Krimi", "Hörbuch") — analog zum Muster bei
   // Nutzer.deaktivierteModule, kein eigenes Tag-Modell nötig für eine persönliche Bibliothek.
   tags           String   @default("[]")
   erstelltAm     DateTime @default(now())
 
-  nutzer  Nutzer      @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
-  notizen BuchNotiz[]
+  nutzer     Nutzer      @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  notizen    BuchNotiz[]
+  leserunden Leserunde[]
+}
+
+// Ein Buch kann mehrmals gelesen werden — begonnenAm/beendetAm liegen daher nicht mehr direkt
+// am Buch, sondern pro Leserunde. Beim Wechsel auf Status "am_lesen" legt der Controller eine
+// neue, offene Leserunde an (beendetAm noch leer); beim Wechsel auf "gelesen" wird die jeweils
+// offene Leserunde geschlossen.
+model Leserunde {
+  id         Int     @id @default(autoincrement())
+  buchId     Int
+  begonnenAm String? // yyyy-mm-dd
+  beendetAm  String? // yyyy-mm-dd
+
+  buch Buch @relation(fields: [buchId], references: [id], onDelete: Cascade)
 }
 
 model BuchNotiz {

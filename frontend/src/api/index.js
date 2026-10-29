@@ -73,6 +73,8 @@ export const buecher = {
   notizLoeschen: (id) => client.delete(`/buecher/notizen/${id}`),
   coverDatei: (id) => client.get(`/buecher/${id}/cover`, { responseType: 'blob' }),
   coverHochladen: (id, formData) => client.post(`/buecher/${id}/cover`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  leserundeAktualisieren: (id, daten) => client.patch(`/buecher/leserunden/${id}`, daten),
+  leserundeLoeschen: (id) => client.delete(`/buecher/leserunden/${id}`),
 }
 
 export const nutzerAdmin = {

@@ -38,7 +38,17 @@
         <div class="sterne-wahl">
           <span v-for="n in 5" :key="n" @click="bewertungSetzen(n)" :class="{ an: buch.bewertung >= n }">★</span>
         </div>
-        <p v-if="buch.beendetAm" class="mut">Beendet am {{ formatDatum(buch.beendetAm) }}</p>
+      </div>
+
+      <div v-if="buch.leserunden?.length" class="feld">
+        <label>Leserunden</label>
+        <div class="leserunde" v-for="l in buch.leserunden" :key="l.id">
+          <input type="date" :value="l.begonnenAm" @change="leserundeAendern(l.id, 'begonnenAm', $event.target.value)" />
+          <span class="bis">–</span>
+          <input type="date" :value="l.beendetAm" @change="leserundeAendern(l.id, 'beendetAm', $event.target.value)" />
+          <span class="loeschen" @click="leserundeEntfernen(l.id)">×</span>
+        </div>
+        <button v-if="buch.status === 'gelesen'" class="erneut" @click="erneutLesen">Erneut lesen</button>
       </div>
 
       <div class="feld">
@@ -132,6 +142,20 @@ async function bewertungSetzen(n) {
   emit('aktualisiert', res.data)
 }
 
+async function erneutLesen() {
+  await statusSetzen('am_lesen')
+}
+
+async function leserundeAendern(id, feld, wert) {
+  const res = await buecherApi.leserundeAktualisieren(id, { [feld]: wert || null })
+  emit('aktualisiert', res.data)
+}
+
+async function leserundeEntfernen(id) {
+  const res = await buecherApi.leserundeLoeschen(id)
+  emit('aktualisiert', res.data)
+}
+
 const details = reactive({
   seitenzahl: props.buch.seitenzahl,
   isbn: props.buch.isbn,
@@ -202,6 +226,11 @@ input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
 .sterne-wahl { font-size: 24px; color: var(--line); }
 .sterne-wahl span { cursor: pointer; }
 .sterne-wahl span.an { color: var(--primary); }
+.leserunde { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.leserunde input[type="date"] { flex: 1; padding: 7px 8px; font-size: 13px; }
+.leserunde .bis { color: var(--muted); }
+.leserunde .loeschen { color: var(--danger); font-size: 16px; cursor: pointer; padding: 0 2px; }
+button.erneut { width: 100%; margin-top: 6px; padding: 9px 14px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; }
 .notiz { border-bottom: 1px solid var(--line); padding: 8px 0; }
 .notiz p { margin: 0 0 4px; }
 .notiz-fuss { display: flex; justify-content: space-between; }
