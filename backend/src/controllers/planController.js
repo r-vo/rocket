@@ -53,4 +53,51 @@ async function alleEntfernen(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { liste, setzen, entfernen, alleEntfernen };
+// Übernimmt die aktuell im Plan angezeigten Texte (echte Einträge wie auch die clientseitig
+// berechneten Vorschläge für noch leere Slots, siehe planVorschlag() im Frontend) als eigene,
+// private Rezepte und verlinkt die jeweiligen Slots automatisch. Läuft bewusst über die normale
+// authentifizierte Route und nur auf req.user.id, ausgelöst vom Nutzer selbst im Browser — dort
+// liegen die zur Vorschlagsberechnung nötigen Profildaten (Eiweißziel etc.) bereits vor, hier
+// im Backend müssten sie sonst separat nachgebildet werden. Mehrere Slots mit identischem Text
+// landen bei genau einem gemeinsamen Rezept.
+async function rezepteUebernehmen(req, res) {
+  const { eintraege } = req.body;
+  if (!Array.isArray(eintraege)) {
+    return res.status(400).json({ error: 'eintraege (Array) ist erforderlich' });
+  }
+
+  const gruppen = new Map(); // text -> [{wochentag, mahlzeit}]
+  for (const e of eintraege) {
+    const text = e.text?.trim();
+    const wochentag = +e.wochentag;
+    if (!text || Number.isNaN(wochentag) || wochentag < 0 || wochentag > 6 || !['B', 'L', 'D'].includes(e.mahlzeit)) continue;
+    if (!gruppen.has(text)) gruppen.set(text, []);
+    gruppen.get(text).push({ wochentag, mahlzeit: e.mahlzeit });
+  }
+
+  let erstellt = 0;
+  let wiederverwendet = 0;
+  let verlinkt = 0;
+
+  for (const [text, slots] of gruppen) {
+    let rezept = await prisma.rezept.findFirst({ where: { nutzerId: req.user.id, titel: text } });
+    if (rezept) {
+      wiederverwendet++;
+    } else {
+      rezept = await prisma.rezept.create({ data: { nutzerId: req.user.id, titel: text, oeffentlich: false } });
+      erstellt++;
+    }
+    for (const s of slots) {
+      await prisma.planpunkt.upsert({
+        where: { nutzerId_wochentag_mahlzeit: { nutzerId: req.user.id, wochentag: s.wochentag, mahlzeit: s.mahlzeit } },
+        update: { text, rezeptId: rezept.id },
+        create: { nutzerId: req.user.id, wochentag: s.wochentag, mahlzeit: s.mahlzeit, text, rezeptId: rezept.id },
+      });
+      verlinkt++;
+    }
+  }
+
+  res.json({ ok: true, erstellt, wiederverwendet, verlinkt });
+}
+
+module.exports = { liste, setzen, entfernen, alleEntfernen, rezepteUebernehmen };

@@ -55,6 +55,7 @@ export const plan = {
   setzen: (wochentag, mahlzeit, text, rezeptId) => client.put(`/plan/${wochentag}/${mahlzeit}`, { text, rezeptId }),
   entfernen: (wochentag, mahlzeit) => client.delete(`/plan/${wochentag}/${mahlzeit}`),
   alleEntfernen: () => client.delete('/plan'),
+  rezepteUebernehmen: (eintraege) => client.post('/plan/rezepte-uebernehmen', { eintraege }),
 }
 
 export const einstellungen = {

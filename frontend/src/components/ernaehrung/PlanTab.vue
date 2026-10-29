@@ -35,6 +35,7 @@
     </div>
   </div>
 
+  <button class="ghost" @click="rezepteUebernehmen">Alle Mahlzeiten aus dem Plan als Rezepte übernehmen</button>
   <button class="ghost" @click="planZuruecksetzen">Plan zurücksetzen</button>
 
   <PlanSlotBearbeiten
@@ -137,6 +138,24 @@ async function ausFavoritenFuellen() {
 async function planZuruecksetzen() {
   if (!confirm('Alle Änderungen am Plan zurücksetzen?')) return
   await planApi.alleEntfernen()
+  await laden()
+}
+
+// Übernimmt jeden noch nicht verknüpften Slot — egal ob eigener Text oder nur der automatisch
+// berechnete Vorschlag — als eigenes, privates Rezept und verlinkt ihn. Mehrere Slots mit
+// gleichem Text landen bei einem gemeinsamen Rezept (serverseitig gruppiert).
+async function rezepteUebernehmen() {
+  const eintraege = []
+  for (let i = 0; i < 7; i++) {
+    for (const k of ['B', 'L', 'D']) {
+      if (slotRezept(i, k)) continue
+      eintraege.push({ wochentag: i, mahlzeit: k, text: slotText(i, k) })
+    }
+  }
+  if (!eintraege.length) { alert('Alle Mahlzeiten sind bereits mit einem Rezept verknüpft.'); return }
+  if (!confirm(`${eintraege.length} Mahlzeiten werden als eigene Rezepte angelegt (mehrfach gleiche Texte teilen sich ein Rezept) und mit dem Plan verlinkt. Fortfahren?`)) return
+  const res = await planApi.rezepteUebernehmen(eintraege)
+  alert(`${res.data.erstellt} neue Rezepte erstellt, ${res.data.wiederverwendet} bereits vorhandene wiederverwendet, ${res.data.verlinkt} Mahlzeiten verlinkt.`)
   await laden()
 }
 
