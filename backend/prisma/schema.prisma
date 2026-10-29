@@ -162,8 +162,13 @@ model Planpunkt {
   wochentag Int // 0=Montag … 6=Sonntag
   mahlzeit  String // 'B' | 'L' | 'D'
   text      String
+  // Optionale Verknüpfung zu einem Rezept (eigenes oder ein mit mir geteiltes) — bei
+  // gelöschtem Rezept bleibt der Planpunkt mit seinem Text erhalten, nur die Verknüpfung
+  // verschwindet (onDelete: SetNull statt Cascade).
+  rezeptId  Int?
 
-  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  nutzer Nutzer  @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  rezept Rezept? @relation(fields: [rezeptId], references: [id], onDelete: SetNull)
 
   @@unique([nutzerId, wochentag, mahlzeit])
 }
@@ -265,9 +270,10 @@ model Rezept {
   fotoDateiname String?
   erstelltAm    DateTime @default(now())
 
-  nutzer    Nutzer          @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
-  zutaten   RezeptZutat[]
-  favoriten RezeptFavorit[]
+  nutzer     Nutzer          @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  zutaten    RezeptZutat[]
+  planpunkte Planpunkt[]
+  favoriten  RezeptFavorit[]
 }
 
 // Favorit ist bewusst eine eigene Zeile pro (Nutzer, Rezept) statt eines Felds auf Rezept

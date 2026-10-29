@@ -4,6 +4,20 @@
       <h2>{{ wochentagName }}: {{ mahlzeitName }}</h2>
       <label>Dein Gericht</label>
       <input v-model="text" @keyup.enter="speichern" />
+
+      <div v-if="rezeptId" class="verknuepft">
+        <span>🍲 Verknüpft mit „{{ verknuepftesTitel }}"</span>
+        <span class="loeschen" @click="rezeptId = null">Entfernen</span>
+      </div>
+      <template v-else>
+        <h3>Mit Rezept verknüpfen</h3>
+        <input v-model="rezeptSuche" placeholder="Rezept suchen…" />
+        <div class="eintrag" v-for="r in rezeptTreffer" :key="r.id" @click="rezeptWaehlen(r)">
+          <span>{{ r.titel }}{{ !r.istEigenes ? ` (von ${r.nutzerName})` : '' }}</span><span class="mut">＋</span>
+        </div>
+        <p v-if="rezeptSuche.trim() && !rezeptTreffer.length" class="mut">Keine Treffer.</p>
+      </template>
+
       <button @click="speichern">Speichern</button>
 
       <template v-if="favoriten.length">
@@ -26,28 +40,46 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { WOCHENTAGE, MAHLZEIT_NAME } from '@/utils/ernaehrung.js'
 
 const props = defineProps({
   wochentag: { type: Number, required: true },
   mahlzeit: { type: String, required: true },
   aktuellerText: { type: String, default: '' },
+  aktuellesRezept: { type: Object, default: null },
   favoriten: { type: Array, default: () => [] },
   vorschlaege: { type: Array, default: () => [] },
+  rezepte: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['gespeichert', 'zurueckgesetzt', 'schliessen'])
 
 const text = ref(props.aktuellerText)
+const rezeptId = ref(props.aktuellesRezept?.id || null)
+const verknuepftesTitel = ref(props.aktuellesRezept?.titel || '')
+const rezeptSuche = ref('')
 const wochentagName = WOCHENTAGE[props.wochentag]
 const mahlzeitName = MAHLZEIT_NAME[props.mahlzeit]
+
+const rezeptTreffer = computed(() => {
+  const begriff = rezeptSuche.value.trim().toLowerCase()
+  if (!begriff) return []
+  return props.rezepte.filter((r) => r.titel.toLowerCase().includes(begriff)).slice(0, 10)
+})
+
+function rezeptWaehlen(r) {
+  rezeptId.value = r.id
+  verknuepftesTitel.value = r.titel
+  text.value = r.titel
+  rezeptSuche.value = ''
+}
 
 function anhaengen(f) {
   text.value = text.value.trim() ? `${text.value.trim()} + ${f}` : f
 }
 
 function speichern() {
-  if (text.value.trim()) emit('gespeichert', text.value.trim())
+  if (text.value.trim()) emit('gespeichert', { text: text.value.trim(), rezeptId: rezeptId.value })
 }
 
 function zuruecksetzen() {
@@ -66,4 +98,6 @@ button { padding: 9px 14px; border: 0; border-radius: 8px; background: var(--pri
 button.ghost { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
 .eintrag { display: flex; justify-content: space-between; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .mut { color: var(--muted); font-size: 13px; }
+.verknuepft { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 13px; }
+.verknuepft .loeschen { color: var(--danger); cursor: pointer; flex-shrink: 0; }
 </style>

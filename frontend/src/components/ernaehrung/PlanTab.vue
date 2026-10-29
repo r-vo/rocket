@@ -26,9 +26,12 @@
 
   <div class="card" v-for="(tag, i) in WOCHENTAGE" :key="tag">
     <h3 style="margin-top: 0;">{{ tag }}</h3>
-    <div v-for="k in ['B', 'L', 'D']" :key="k" class="slot" @click="slotOeffnen(i, k)">
-      <span><span class="mut">{{ MAHLZEIT_KURZ[k] }}</span><br>{{ slotText(i, k) }}</span>
-      <span class="mut">✎</span>
+    <div v-for="k in ['B', 'L', 'D']" :key="k" class="slot">
+      <span class="slot-text" @click="slotOeffnen(i, k)">
+        <span class="mut">{{ MAHLZEIT_KURZ[k] }}</span><br>{{ slotText(i, k) }}
+      </span>
+      <span v-if="slotRezept(i, k)" class="rezept-link" @click="rezeptAnsehen(slotRezept(i, k))" title="Rezept anzeigen">🍲</span>
+      <span class="mut" @click="slotOeffnen(i, k)">✎</span>
     </div>
   </div>
 
@@ -38,17 +41,22 @@
     v-if="bearbeiteSlot"
     :wochentag="bearbeiteSlot.i" :mahlzeit="bearbeiteSlot.k"
     :aktueller-text="slotText(bearbeiteSlot.i, bearbeiteSlot.k)"
+    :aktuelles-rezept="slotRezept(bearbeiteSlot.i, bearbeiteSlot.k)"
     :favoriten="(favoritenJeMahlzeit[bearbeiteSlot.k] || []).slice(0, 6).map((f) => f.bezeichnung)"
     :vorschlaege="[1, 2, 3, 4, 5].map((j) => planVorschlag(bearbeiteSlot.i + j, bearbeiteSlot.k, ziel.eiweiss))"
+    :rezepte="rezepte"
     @gespeichert="slotSpeichern" @zurueckgesetzt="slotZuruecksetzen" @schliessen="bearbeiteSlot = null"
   />
+
+  <RezeptAnsicht v-if="angesehenesRezept" :rezept="angesehenesRezept" @schliessen="angesehenesRezept = null" />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { plan as planApi, ernaehrung as ernaehrungApi } from '@/api/index.js'
+import { plan as planApi, ernaehrung as ernaehrungApi, rezepte as rezepteApi } from '@/api/index.js'
 import { tagesziel, trainingsplan, planVorschlag, WOCHENTAGE, MAHLZEIT_KURZ, MAHLZEIT_NAME } from '@/utils/ernaehrung.js'
 import PlanSlotBearbeiten from './PlanSlotBearbeiten.vue'
+import RezeptAnsicht from './RezeptAnsicht.vue'
 
 const props = defineProps({ profil: { type: Object, required: true } })
 
@@ -59,32 +67,46 @@ const planPunkte = ref([])
 const favoritenGesamt = ref([])
 const favoritenJeMahlzeit = ref({})
 const bearbeiteSlot = ref(null)
+const rezepte = ref([])
+const angesehenesRezept = ref(null)
 
 function slotText(i, k) {
   const punkt = planPunkte.value.find((p) => p.wochentag === i && p.mahlzeit === k)
   return punkt ? punkt.text : planVorschlag(i, k, ziel.value.eiweiss)
 }
 
+function slotRezept(i, k) {
+  const punkt = planPunkte.value.find((p) => p.wochentag === i && p.mahlzeit === k)
+  return punkt?.rezept || null
+}
+
+async function rezeptAnsehen(rezeptStub) {
+  const vollesRezept = rezepte.value.find((r) => r.id === rezeptStub.id)
+  angesehenesRezept.value = vollesRezept || rezeptStub
+}
+
 async function laden() {
-  const [planRes, favGesamtRes, favB, favL, favD] = await Promise.all([
+  const [planRes, favGesamtRes, favB, favL, favD, rezepteRes] = await Promise.all([
     planApi.liste(),
     ernaehrungApi.favoriten(),
     ernaehrungApi.favoriten(MAHLZEIT_NAME.B),
     ernaehrungApi.favoriten(MAHLZEIT_NAME.L),
     ernaehrungApi.favoriten(MAHLZEIT_NAME.D),
+    rezepteApi.liste(),
   ])
   planPunkte.value = planRes.data
   favoritenGesamt.value = favGesamtRes.data
   favoritenJeMahlzeit.value = { B: favB.data, L: favL.data, D: favD.data }
+  rezepte.value = rezepteRes.data
 }
 
 function slotOeffnen(i, k) {
   bearbeiteSlot.value = { i, k }
 }
 
-async function slotSpeichern(text) {
+async function slotSpeichern({ text, rezeptId }) {
   const { i, k } = bearbeiteSlot.value
-  await planApi.setzen(i, k, text)
+  await planApi.setzen(i, k, text, rezeptId)
   bearbeiteSlot.value = null
   await laden()
 }
@@ -126,8 +148,11 @@ onMounted(laden)
 .hinweis { border-left: 4px solid var(--primary-dark); padding: 6px 12px; font-size: 14px; color: var(--muted); margin: 12px 0; max-width: 460px; }
 .mut { color: var(--muted); font-size: 13px; }
 ul { margin: 8px 0 0; padding-left: 18px; }
-.slot { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.slot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .slot:last-child { border-bottom: none; }
+.slot-text { flex: 1; min-width: 0; cursor: pointer; }
+.rezept-link { cursor: pointer; flex-shrink: 0; }
+.slot > .mut { cursor: pointer; flex-shrink: 0; }
 button.ghost { padding: 9px 16px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; margin-top: 8px; }
 button.ghost:disabled { opacity: .5; cursor: default; }
 </style>

@@ -52,7 +52,7 @@ export const fotos = {
 
 export const plan = {
   liste: () => client.get('/plan'),
-  setzen: (wochentag, mahlzeit, text) => client.put(`/plan/${wochentag}/${mahlzeit}`, { text }),
+  setzen: (wochentag, mahlzeit, text, rezeptId) => client.put(`/plan/${wochentag}/${mahlzeit}`, { text, rezeptId }),
   entfernen: (wochentag, mahlzeit) => client.delete(`/plan/${wochentag}/${mahlzeit}`),
   alleEntfernen: () => client.delete('/plan'),
 }
