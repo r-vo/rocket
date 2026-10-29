@@ -80,6 +80,10 @@ export const buecher = {
   leserundeLoeschen: (id) => client.delete(`/buecher/leserunden/${id}`),
 }
 
+export const heute = {
+  uebersicht: (von, bis) => client.get('/heute', { params: { von, bis } }),
+}
+
 export const nutzerAdmin = {
   liste: () => client.get('/admin/nutzer'),
   erstellen: (daten) => client.post('/admin/nutzer', daten),
