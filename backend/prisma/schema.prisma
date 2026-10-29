@@ -33,6 +33,8 @@ model Nutzer {
   habits               Habit[]
   buecher              Buch[]
   buchNotizen          BuchNotiz[]
+  rezepte              Rezept[]
+  rezeptFavoriten      RezeptFavorit[]
 }
 
 // DB-gestützte Sitzung statt JWT: ermöglicht sofortiges serverseitiges Invalidieren bei
@@ -236,4 +238,61 @@ model NotizVerknuepfung {
   notizZu  BuchNotiz @relation("VerknuepfungZu", fields: [notizZuId], references: [id], onDelete: Cascade)
 
   @@unique([notizVonId, notizZuId])
+}
+
+// Eigene Rezeptsammlung, optional mit anderen Rocket-Nutzern teilbar. `oeffentlich` ist bewusst
+// ein einfacher An/Aus-Schalter statt gezielter Nutzer-Auswahl — passend zur kleinen,
+// familiären Nutzerbasis (aktuell 2 Nutzer) ohne Verwaltungsaufwand. Bearbeiten/Löschen bleibt
+// auch bei geteilten Rezepten dem Ersteller vorbehalten — AUSSER bei den Nährwert-Feldern
+// (kcal/nettoCarbs/fett/eiweiss, jeweils pro Portion): die darf laut Ronnys Wunsch jeder
+// erfassen, der das Rezept sehen darf (also auch der Empfänger eines geteilten Rezepts), siehe
+// rezepteController.js.
+model Rezept {
+  id            Int      @id @default(autoincrement())
+  nutzerId      Int
+  titel         String
+  portionen     Int?
+  zeitMinuten   Int?
+  zubereitung   String?
+  // Nährwerte pro Portion, gleiche Feldnamen wie Ernaehrungseintrag.
+  kcal          Int?
+  nettoCarbs    Float?
+  fett          Float?
+  eiweiss       Float?
+  // JSON-Array frei vergebener Tags, gleiches Muster wie Buch.tags.
+  tags          String   @default("[]")
+  oeffentlich   Boolean  @default(false)
+  fotoDateiname String?
+  erstelltAm    DateTime @default(now())
+
+  nutzer    Nutzer          @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  zutaten   RezeptZutat[]
+  favoriten RezeptFavorit[]
+}
+
+// Favorit ist bewusst eine eigene Zeile pro (Nutzer, Rezept) statt eines Felds auf Rezept
+// selbst — ein Rezept kann geteilt sein, "Favorit" ist aber eine rein persönliche Einstufung
+// und darf nicht für alle Nutzer gemeinsam gelten, die das Rezept sehen können.
+model RezeptFavorit {
+  id         Int      @id @default(autoincrement())
+  nutzerId   Int
+  rezeptId   Int
+  erstelltAm DateTime @default(now())
+
+  nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+  rezept Rezept @relation(fields: [rezeptId], references: [id], onDelete: Cascade)
+
+  @@unique([nutzerId, rezeptId])
+}
+
+// Freitext-Zeile statt Menge/Einheit/Bezeichnung als Einzelfelder — eine Zutatenliste mit
+// mehreren Zeilen ist der eigentliche Wert, eine strukturierte Mengenerfassung (für z. B.
+// automatische Nährwertberechnung) wurde nicht angefragt und würde die Eingabe nur erschweren.
+model RezeptZutat {
+  id          Int    @id @default(autoincrement())
+  rezeptId    Int
+  text        String // z. B. "200 g Hackfleisch"
+  reihenfolge Int    @default(0)
+
+  rezept Rezept @relation(fields: [rezeptId], references: [id], onDelete: Cascade)
 }

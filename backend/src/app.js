@@ -14,6 +14,7 @@ const einstellungenRoutes = require('./routes/einstellungen');
 const buecherRoutes = require('./routes/buecher');
 const heuteRoutes = require('./routes/heute');
 const habitRoutes = require('./routes/habits');
+const rezepteRoutes = require('./routes/rezepte');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -44,6 +45,7 @@ app.use('/api/einstellungen', einstellungenRoutes);
 app.use('/api/buecher', buecherRoutes);
 app.use('/api/heute', heuteRoutes);
 app.use('/api/habits', habitRoutes);
+app.use('/api/rezepte', rezepteRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: `Route nicht gefunden: ${req.method} ${req.path}` });

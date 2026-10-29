@@ -10,6 +10,7 @@
       <button :class="{ on: tab === 'koerper' }" @click="tab = 'koerper'">Körper</button>
       <button :class="{ on: tab === 'werte' }" @click="tab = 'werte'">Werte</button>
       <button :class="{ on: tab === 'ziele' }" @click="tab = 'ziele'">Ziele</button>
+      <button :class="{ on: tab === 'rezepte' }" @click="tab = 'rezepte'">Rezepte</button>
     </nav>
 
     <HeuteTab v-if="tab === 'heute'" :profil="profil" />
@@ -17,6 +18,7 @@
     <KoerperTab v-else-if="tab === 'koerper'" @aktualisiert="profilLaden" />
     <WerteTab v-else-if="tab === 'werte'" :key="werteKey" :profil="profil" />
     <ZieleForm v-else-if="tab === 'ziele'" :profil="profil" @gespeichert="nachSpeichern" />
+    <RezepteTab v-else-if="tab === 'rezepte'" />
   </template>
 </template>
 
@@ -28,6 +30,7 @@ import HeuteTab from '@/components/ernaehrung/HeuteTab.vue'
 import PlanTab from '@/components/ernaehrung/PlanTab.vue'
 import KoerperTab from '@/components/ernaehrung/KoerperTab.vue'
 import WerteTab from '@/components/ernaehrung/WerteTab.vue'
+import RezepteTab from '@/components/ernaehrung/RezepteTab.vue'
 
 const laedt = ref(true)
 const profil = ref(null)

@@ -88,6 +88,17 @@ export const habits = {
   eintragSetzen: (id, datum, anzahl) => client.put(`/habits/${id}/eintraege/${datum}`, { anzahl }),
 }
 
+export const rezepte = {
+  liste: () => client.get('/rezepte'),
+  erstellen: (daten) => client.post('/rezepte', daten),
+  aktualisieren: (id, daten) => client.patch(`/rezepte/${id}`, daten),
+  loeschen: (id) => client.delete(`/rezepte/${id}`),
+  fotoDatei: (id) => client.get(`/rezepte/${id}/foto`, { responseType: 'blob' }),
+  fotoHochladen: (id, formData) => client.post(`/rezepte/${id}/foto`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  favoritSetzen: (id) => client.post(`/rezepte/${id}/favorit`),
+  favoritEntfernen: (id) => client.delete(`/rezepte/${id}/favorit`),
+}
+
 export const heute = {
   uebersicht: (von, bis) => client.get('/heute', { params: { von, bis } }),
 }
