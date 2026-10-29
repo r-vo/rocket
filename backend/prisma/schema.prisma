@@ -203,8 +203,28 @@ model BuchNotiz {
   nutzerId   Int
   text       String
   seite      Int?
+  // JSON-Array frei vergebener Tags, gleiches Muster wie Buch.tags.
+  tags       String   @default("[]")
   erstelltAm DateTime @default(now())
 
   buch   Buch   @relation(fields: [buchId], references: [id], onDelete: Cascade)
   nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
+
+  verknuepfungenVon NotizVerknuepfung[] @relation("VerknuepfungVon")
+  verknuepfungenZu  NotizVerknuepfung[] @relation("VerknuepfungZu")
+}
+
+// Verknüpfung zwischen zwei Notizen (auch über Bücher hinweg) — bewusst ungerichtet gedacht,
+// der Controller legt beim Anlegen immer die kleinere id als notizVonId ab, damit @@unique
+// doppelte Verknüpfungen in beiden Richtungen verhindert.
+model NotizVerknuepfung {
+  id         Int      @id @default(autoincrement())
+  notizVonId Int
+  notizZuId  Int
+  erstelltAm DateTime @default(now())
+
+  notizVon BuchNotiz @relation("VerknuepfungVon", fields: [notizVonId], references: [id], onDelete: Cascade)
+  notizZu  BuchNotiz @relation("VerknuepfungZu", fields: [notizZuId], references: [id], onDelete: Cascade)
+
+  @@unique([notizVonId, notizZuId])
 }

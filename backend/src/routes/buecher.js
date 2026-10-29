@@ -34,9 +34,12 @@ router.post('/:id/cover', coverUpload.single('foto'), buecherController.coverHoc
 router.patch('/leserunden/:id', buecherController.leserundeAktualisieren);
 router.delete('/leserunden/:id', buecherController.leserundeLoeschen);
 
+router.get('/notizen/suche', notizenController.suchen);
 router.get('/:buchId/notizen', notizenController.liste);
 router.post('/:buchId/notizen', notizenController.erstellen);
 router.put('/notizen/:id', notizenController.aktualisieren);
 router.delete('/notizen/:id', notizenController.loeschen);
+router.post('/notizen/:id/verknuepfungen', notizenController.verknuepfen);
+router.delete('/notizen/verknuepfungen/:id', notizenController.verknuepfungLoeschen);
 
 module.exports = router;

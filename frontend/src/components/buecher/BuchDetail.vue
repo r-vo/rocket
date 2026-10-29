@@ -77,9 +77,40 @@
       <h3>Notizen</h3>
       <div v-for="n in notizen" :key="n.id" class="notiz">
         <p>{{ n.text }}</p>
+
+        <div class="notiz-tags" v-if="n.tags?.length">
+          <span class="tag klein" v-for="t in n.tags" :key="t">{{ t }} <span class="tag-x" @click="notizTagEntfernen(n, t)">×</span></span>
+        </div>
+        <input
+          class="notiz-tag-eingabe"
+          placeholder="Tag hinzufügen + Enter"
+          @keyup.enter="notizTagHinzufuegen(n, $event.target.value); $event.target.value = ''"
+        />
+
+        <div class="notiz-links" v-if="n.verknuepfungen?.length">
+          <div class="notiz-link" v-for="v in n.verknuepfungen" :key="v.verknuepfungId">
+            <span>🔗 {{ v.buchTitel }}: {{ v.text.slice(0, 60) }}{{ v.text.length > 60 ? '…' : '' }}</span>
+            <span class="loeschen" @click="verknuepfungEntfernen(v.verknuepfungId)">×</span>
+          </div>
+        </div>
+
         <div class="notiz-fuss">
           <span class="mut">{{ formatDatum(n.erstelltAm?.slice(0, 10)) }}{{ n.seite ? ` · S. ${n.seite}` : '' }}</span>
-          <span class="loeschen" @click="notizLoeschen(n.id)">Löschen</span>
+          <span class="aktionen">
+            <span class="verknuepfen-link" @click="verknuepfenOeffnen(n.id)">Verknüpfen</span>
+            <span class="loeschen" @click="notizLoeschen(n.id)">Löschen</span>
+          </span>
+        </div>
+
+        <div v-if="verknuepfenOffenFuer === n.id" class="verknuepfen-box">
+          <input v-model="verknuepfungSuche" placeholder="Notiz suchen…" @input="verknuepfungSuchen" />
+          <div class="verknuepfen-ergebnisse">
+            <div v-for="e in verknuepfungErgebnisse" :key="e.id" class="verknuepfen-ergebnis" @click="verknuepfungAnlegen(n.id, e.id)">
+              <strong>{{ e.buchTitel }}</strong> — {{ e.text.slice(0, 60) }}{{ e.text.length > 60 ? '…' : '' }}
+            </div>
+            <p v-if="verknuepfungSuche.trim() && !verknuepfungErgebnisse.length" class="mut klein">Keine Treffer.</p>
+          </div>
+          <button class="ghost" @click="verknuepfenOffenFuer = null">Abbrechen</button>
         </div>
       </div>
       <p v-if="!notizen.length" class="mut">Noch keine Notizen.</p>
@@ -198,6 +229,46 @@ async function notizLoeschen(id) {
   await notizenLaden()
 }
 
+async function notizTagHinzufuegen(n, wert) {
+  const tag = wert.trim()
+  if (!tag || (n.tags || []).includes(tag)) return
+  await buecherApi.notizAktualisieren(n.id, { tags: [...(n.tags || []), tag] })
+  await notizenLaden()
+}
+
+async function notizTagEntfernen(n, tag) {
+  await buecherApi.notizAktualisieren(n.id, { tags: (n.tags || []).filter((t) => t !== tag) })
+  await notizenLaden()
+}
+
+const verknuepfenOffenFuer = ref(null)
+const verknuepfungSuche = ref('')
+const verknuepfungErgebnisse = ref([])
+
+function verknuepfenOeffnen(id) {
+  verknuepfenOffenFuer.value = verknuepfenOffenFuer.value === id ? null : id
+  verknuepfungSuche.value = ''
+  verknuepfungErgebnisse.value = []
+}
+
+async function verknuepfungSuchen() {
+  const q = verknuepfungSuche.value.trim()
+  if (!q) { verknuepfungErgebnisse.value = []; return }
+  const res = await buecherApi.notizSuchen(q, verknuepfenOffenFuer.value)
+  verknuepfungErgebnisse.value = res.data
+}
+
+async function verknuepfungAnlegen(notizId, zielId) {
+  await buecherApi.notizVerknuepfen(notizId, zielId)
+  verknuepfenOffenFuer.value = null
+  await notizenLaden()
+}
+
+async function verknuepfungEntfernen(id) {
+  await buecherApi.notizVerknuepfungLoeschen(id)
+  await notizenLaden()
+}
+
 async function buchLoeschen() {
   if (!confirm(`"${props.buch.titel}" wirklich löschen? Notizen gehen dabei verloren.`)) return
   await buecherApi.loeschen(props.buch.id)
@@ -233,8 +304,22 @@ input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
 button.erneut { width: 100%; margin-top: 6px; padding: 9px 14px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; }
 .notiz { border-bottom: 1px solid var(--line); padding: 8px 0; }
 .notiz p { margin: 0 0 4px; }
-.notiz-fuss { display: flex; justify-content: space-between; }
+.notiz-fuss { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.notiz-fuss .aktionen { display: flex; gap: 10px; }
 .loeschen { color: var(--danger); font-size: 13px; cursor: pointer; }
+.notiz-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.tag.klein { padding: 2px 8px; font-size: 11px; }
+.notiz-tag-eingabe { width: auto; display: inline-block; padding: 4px 8px; font-size: 12px; border: 1px dashed var(--line); border-radius: 999px; margin-top: 2px; }
+.notiz-links { margin: 4px 0; }
+.notiz-link { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); background: var(--bg); border-radius: 6px; padding: 4px 8px; margin-bottom: 4px; }
+.notiz-link span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.verknuepfen-link { color: var(--primary); font-size: 13px; cursor: pointer; }
+.verknuepfen-box { margin: 6px 0 4px; padding: 8px; background: var(--bg); border-radius: 8px; }
+.verknuepfen-ergebnisse { max-height: 160px; overflow-y: auto; margin: 6px 0; }
+.verknuepfen-ergebnis { font-size: 13px; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.verknuepfen-ergebnis:last-child { border-bottom: 0; }
+.mut.klein { font-size: 12px; margin: 4px 0; }
+.verknuepfen-box button.ghost { margin-top: 6px; }
 .neue-notiz { margin-top: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 8px; }
 .g2 button { padding: 9px 14px; border: 0; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 600; }
