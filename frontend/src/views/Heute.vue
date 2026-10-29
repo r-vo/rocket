@@ -14,33 +14,33 @@
   <div v-if="laedt" class="mut">Wird geladen…</div>
 
   <template v-else>
-    <div v-if="modulStore.istAktiv('ernaehrung')" class="card">
-      <h2>🍽️ Ernährung</h2>
+    <RouterLink v-if="modulStore.istAktiv('ernaehrung')" to="/ernaehrung" class="card">
+      <div class="kopf"><h2>🍽️ Ernährung</h2><span class="pfeil-weiter">›</span></div>
       <p class="zahl">{{ daten.ernaehrung.kcal }} kcal</p>
       <p class="mut">{{ Math.round(daten.ernaehrung.nettoCarbs * 10) / 10 }} g Netto-Carbs</p>
-    </div>
+    </RouterLink>
 
-    <div v-if="modulStore.istAktiv('buecher')" class="card">
-      <h2>📖 Bücher</h2>
+    <RouterLink v-if="modulStore.istAktiv('buecher')" to="/buecher" class="card">
+      <div class="kopf"><h2>📖 Bücher</h2><span class="pfeil-weiter">›</span></div>
       <div v-if="daten.buecher.length" class="buch-zeile" v-for="b in daten.buecher" :key="b.id + '-' + b.begonnenAm">
         <div class="row"><span>{{ b.titel }}</span><span class="mut">{{ b.aktuelleSeite ?? 0 }}{{ b.seitenzahl ? ` / ${b.seitenzahl}` : '' }} Seiten</span></div>
         <div v-if="b.seitenzahl" class="track"><div class="fill" :style="{ width: Math.min((b.aktuelleSeite ?? 0) / b.seitenzahl * 100, 100) + '%' }"></div></div>
         <p class="mut klein">{{ b.begonnenAm ? formatLang(b.begonnenAm) : '?' }} – {{ b.beendetAm ? formatLang(b.beendetAm) : 'läuft noch' }}</p>
       </div>
       <p v-else class="mut">Kein Buch in diesem Zeitraum in Arbeit.</p>
-    </div>
+    </RouterLink>
 
-    <div v-if="modulStore.istAktiv('habits')" class="card">
-      <h2>✅ Habits</h2>
+    <RouterLink v-if="modulStore.istAktiv('habits')" to="/habits" class="card">
+      <div class="kopf"><h2>✅ Habits</h2><span class="pfeil-weiter">›</span></div>
       <p class="zahl">{{ daten.habits.erledigt }} / {{ daten.habits.gesamt }}</p>
       <p class="mut">erledigt</p>
-    </div>
+    </RouterLink>
 
-    <div v-if="modulStore.istAktiv('aufgaben')" class="card">
-      <h2>📝 Aufgaben</h2>
+    <RouterLink v-if="modulStore.istAktiv('aufgaben')" to="/aufgaben" class="card">
+      <div class="kopf"><h2>📝 Aufgaben</h2><span class="pfeil-weiter">›</span></div>
       <p class="zahl">{{ daten.aufgaben.erledigt }} / {{ daten.aufgaben.gesamt }}</p>
       <p class="mut">von allen fälligen erledigt</p>
-    </div>
+    </RouterLink>
   </template>
 </template>
 
@@ -92,8 +92,10 @@ onMounted(async () => {
 .zeitraum-zeile { justify-content: center; align-items: center; gap: 14px; margin-bottom: 10px; }
 .zeitraum-zeile h2 { margin: 0; font-size: 16px; }
 .pfeil { background: none; border: 0; font-size: 20px; color: var(--primary); padding: 4px 10px; cursor: pointer; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; display: block; color: inherit; text-decoration: none; }
+.card .kopf { display: flex; justify-content: space-between; align-items: center; }
 .card h2 { margin: 0 0 8px; font-size: 16px; }
+.pfeil-weiter { color: var(--muted); font-size: 20px; }
 .zahl { font-size: 28px; font-weight: 800; margin: 2px 0; }
 .mut { color: var(--muted); font-size: 13px; margin: 2px 0; }
 .mut.klein { font-size: 11px; margin-top: 3px; }
