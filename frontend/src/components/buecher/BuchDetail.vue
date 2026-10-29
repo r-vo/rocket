@@ -2,13 +2,12 @@
   <div class="sheet" @click="(e) => e.target === e.currentTarget && $emit('schliessen')">
     <div class="box">
       <div class="kopf">
-        <img v-if="coverSrc" :src="coverSrc" />
-        <div v-else class="cover-platzhalter">📖</div>
+        <div class="cover-box"><BuchCover :buch="buch" /></div>
         <div>
           <h2>{{ buch.titel }}</h2>
           <p class="mut">{{ buch.autor }}</p>
           <label class="foto-link">
-            {{ coverSrc ? 'Foto ändern' : 'Foto zuordnen' }}
+            {{ buch.coverDateiname || buch.coverUrl ? 'Foto ändern' : 'Foto zuordnen' }}
             <input type="file" accept="image/*" @change="coverAuswaehlen" />
           </label>
         </div>
@@ -90,9 +89,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, onUnmounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { buecher as buecherApi } from '@/api/index.js'
 import { STATUS_NAME, formatDatum, buchfotoVerkleinern } from '@/utils/buecher.js'
+import BuchCover from './BuchCover.vue'
 
 const props = defineProps({ buch: { type: Object, required: true } })
 const emit = defineEmits(['aktualisiert', 'geloescht', 'schliessen'])
@@ -100,27 +100,6 @@ const emit = defineEmits(['aktualisiert', 'geloescht', 'schliessen'])
 const notizen = ref([])
 const aktuelleSeite = ref(props.buch.aktuelleSeite)
 const neueNotiz = reactive({ text: '', seite: null })
-
-const coverSrc = ref(null)
-let objectUrl = null
-
-async function coverLaden() {
-  if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null }
-  if (props.buch.coverDateiname) {
-    try {
-      const res = await buecherApi.coverDatei(props.buch.id)
-      objectUrl = URL.createObjectURL(res.data)
-      coverSrc.value = objectUrl
-    } catch (err) {
-      coverSrc.value = null
-    }
-  } else {
-    coverSrc.value = props.buch.coverUrl || null
-  }
-}
-
-watch(() => [props.buch.coverDateiname, props.buch.coverUrl], coverLaden, { immediate: true })
-onUnmounted(() => { if (objectUrl) URL.revokeObjectURL(objectUrl) })
 
 async function coverAuswaehlen(ev) {
   const datei = ev.target.files[0]
@@ -208,8 +187,7 @@ onMounted(notizenLaden)
 .sheet { position: fixed; inset: 0; background: #0006; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
 .box { background: var(--card); width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; border-radius: 20px 20px 0 0; padding: 20px 18px 28px; }
 .kopf { display: flex; gap: 12px; align-items: flex-start; }
-.kopf img { width: 56px; height: 82px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
-.cover-platzhalter { width: 56px; height: 82px; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: 5px; font-size: 24px; flex-shrink: 0; }
+.cover-box { width: 56px; height: 82px; border-radius: 5px; overflow: hidden; font-size: 24px; flex-shrink: 0; }
 h2 { margin: 0 0 2px; font-size: 19px; }
 .foto-link { display: inline-block; margin-top: 6px; font-size: 13px; color: var(--primary); cursor: pointer; }
 .foto-link input { display: none; }

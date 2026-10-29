@@ -10,11 +10,20 @@
     <button v-for="t in alleTags" :key="t" :class="{ on: aktiverTag === t }" @click="aktiverTag = aktiverTag === t ? null : t">{{ t }}</button>
   </nav>
 
-  <button class="hinzufuegen" @click="zeigeHinzufuegen = true">+ Buch hinzufügen</button>
+  <div class="kopfzeile">
+    <button class="hinzufuegen" @click="zeigeHinzufuegen = true">+ Buch hinzufügen</button>
+    <div class="ansicht-wahl">
+      <button :class="{ on: ansicht === 'liste' }" @click="ansichtSetzen('liste')" title="Liste">☰</button>
+      <button :class="{ on: ansicht === 'regal' }" @click="ansichtSetzen('regal')" title="Regal">▤</button>
+    </div>
+  </div>
 
   <div v-if="laedt" class="mut">Wird geladen…</div>
   <template v-else>
-    <BuchKarte v-for="b in angezeigteBuecher" :key="b.id" :buch="b" @oeffnen="buchOeffnen(b)" />
+    <template v-if="ansicht === 'liste'">
+      <BuchKarte v-for="b in angezeigteBuecher" :key="b.id" :buch="b" @oeffnen="buchOeffnen(b)" />
+    </template>
+    <BuchRegal v-else :buecher="angezeigteBuecher" @oeffnen="buchOeffnen" />
     <p v-if="!angezeigteBuecher.length" class="mut">
       {{ aktiverTag ? `Kein Buch mit dem Tag „${aktiverTag}" in „${STATUS_NAME[status]}".` : `Noch keine Bücher in „${STATUS_NAME[status]}".` }}
     </p>
@@ -29,8 +38,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { buecher as buecherApi } from '@/api/index.js'
 import { STATUS_NAME } from '@/utils/buecher.js'
 import BuchKarte from '@/components/buecher/BuchKarte.vue'
+import BuchRegal from '@/components/buecher/BuchRegal.vue'
 import BuchHinzufuegen from '@/components/buecher/BuchHinzufuegen.vue'
 import BuchDetail from '@/components/buecher/BuchDetail.vue'
+
+const ANSICHT_SCHLUESSEL = 'rocket:buecher-ansicht'
 
 const status = ref('wunschliste')
 const buecher = ref([])
@@ -38,6 +50,17 @@ const laedt = ref(true)
 const zeigeHinzufuegen = ref(false)
 const ausgewaehltesBuch = ref(null)
 const aktiverTag = ref(null)
+const ansicht = ref('liste')
+
+try {
+  const gespeichert = localStorage.getItem(ANSICHT_SCHLUESSEL)
+  if (gespeichert === 'liste' || gespeichert === 'regal') ansicht.value = gespeichert
+} catch (err) { /* Speicher evtl. nicht verfügbar */ }
+
+function ansichtSetzen(wert) {
+  ansicht.value = wert
+  try { localStorage.setItem(ANSICHT_SCHLUESSEL, wert) } catch (err) { /* Speicher evtl. nicht verfügbar */ }
+}
 
 const alleTags = computed(() => [...new Set(buecher.value.flatMap((b) => b.tags || []))].sort((a, b) => a.localeCompare(b, 'de')))
 const angezeigteBuecher = computed(() => aktiverTag.value ? buecher.value.filter((b) => (b.tags || []).includes(aktiverTag.value)) : buecher.value)
@@ -91,6 +114,10 @@ onMounted(laden)
 .tagleiste::-webkit-scrollbar { display: none; }
 .tagleiste button { flex-shrink: 0; background: var(--bg); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
 .tagleiste button.on { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
-.hinzufuegen { padding: 9px 16px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; margin-bottom: 8px; }
+.kopfzeile { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.hinzufuegen { padding: 9px 16px; border: 1.5px solid var(--primary); border-radius: 8px; background: transparent; color: var(--primary); font-weight: 600; }
+.ansicht-wahl { display: flex; gap: 4px; flex-shrink: 0; }
+.ansicht-wahl button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--muted); font-size: 16px; line-height: 1; }
+.ansicht-wahl button.on { border-color: var(--primary); color: var(--primary); background: var(--bg); }
 .mut { color: var(--muted); }
 </style>
