@@ -120,10 +120,19 @@ model Aufgabe {
   nutzer Nutzer @relation(fields: [nutzerId], references: [id], onDelete: Cascade)
 }
 
+// „Anzahl" zählt bei jedem Habit dieselbe Handlung: wie oft wurde sie an einem Tag ausgeführt.
+// Je nach `art` wird daraus unterschiedlich „Erfolg": bei positiv soll die Anzahl das Ziel
+// erreichen/überschreiten (z. B. 8× Wasser trinken), bei negativ soll sie es unterschreiten/
+// einhalten (z. B. max. 2× pro Woche Alkohol — Anzahl zählt die Ausrutscher, nicht die
+// Abstinenz-Tage). `frequenz` bestimmt nur das Zeitfenster, über das die Anzahl ausgewertet
+// wird: bei täglich pro Tag, bei wöchentlich pro Kalenderwoche (Montag–Sonntag).
 model Habit {
   id          Int      @id @default(autoincrement())
   nutzerId    Int
   bezeichnung String
+  art         String   @default("positiv") // 'positiv' | 'negativ'
+  frequenz    String   @default("taeglich") // 'taeglich' | 'woechentlich'
+  zielAnzahl  Int      @default(1)
   aktiv       Boolean  @default(true)
   erstelltAm  DateTime @default(now())
 
@@ -132,10 +141,10 @@ model Habit {
 }
 
 model HabitEintrag {
-  id       Int     @id @default(autoincrement())
-  habitId  Int
-  datum    String // yyyy-mm-dd
-  erledigt Boolean @default(true)
+  id      Int    @id @default(autoincrement())
+  habitId Int
+  datum   String // yyyy-mm-dd
+  anzahl  Int    @default(0)
 
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 

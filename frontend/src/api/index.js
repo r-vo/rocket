@@ -80,6 +80,14 @@ export const buecher = {
   leserundeLoeschen: (id) => client.delete(`/buecher/leserunden/${id}`),
 }
 
+export const habits = {
+  liste: () => client.get('/habits'),
+  erstellen: (daten) => client.post('/habits', daten),
+  aktualisieren: (id, daten) => client.patch(`/habits/${id}`, daten),
+  loeschen: (id) => client.delete(`/habits/${id}`),
+  eintragSetzen: (id, datum, anzahl) => client.put(`/habits/${id}/eintraege/${datum}`, { anzahl }),
+}
+
 export const heute = {
   uebersicht: (von, bis) => client.get('/heute', { params: { von, bis } }),
 }
